@@ -50,19 +50,23 @@
       <p class="section-lede">O mapa das nações de Evren.</p>
 
       <div class="map-wrap">
-        <img src="Imagens/mapa.png" alt="Mapa de Evren com as sete nações" class="map-image">
+        <img src="mapa.png" alt="Mapa de Evren com as sete nações" class="map-image">
       </div>
     </section>
 
     <!-- ==================== ABA PERSONAGENS ==================== -->
     <section id="tab-personagens" class="tab-panel">
       <h2 class="section-heading">Personagens</h2>
-      <p class="section-lede">Filtre por afiliação, tipo ou elemento — ou apenas explore.</p>
+      <p class="section-lede">Filtre por elemento — ou apenas explore.</p>
 
       <div class="filter-bar">
-        <div id="filter-afiliacao" class="filter-group"></div>
-        <div id="filter-tipo" class="filter-group"></div>
-        <div id="filter-elemento" class="filter-group"></div>
+        <div class="filter-dropdown" id="filter-elemento-dropdown">
+          <button class="filter-dropdown-toggle" id="filter-elemento-toggle" type="button">
+            <span>Elemento</span>
+            <span class="chevron">▸</span>
+          </button>
+          <div class="filter-dropdown-panel" id="filter-elemento"></div>
+        </div>
       </div>
 
       <div id="char-grid" class="card-grid"></div>
@@ -97,6 +101,9 @@
 <script src="js/nacoes.js"></script>
 <script src="js/organizacoes.js"></script>
 <script src="js/personagens.js"></script>
+
+<!-- dossiês por nação (um arquivo por subpasta, registra em window.DOSSIES) -->
+<script src="nivea/nivea.js"></script>
 
 <!-- funcionalidades (uma por arquivo) -->
 <script src="Features/modal.js"></script>

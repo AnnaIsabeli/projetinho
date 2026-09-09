@@ -1,9 +1,19 @@
 /* ============================================================
-   FEATURE / FILTROS E CARDS DE PERSONAGENS
+   FEATURE / FILTRO E CARDS DE PERSONAGENS
    ============================================================
-   Monta os chips de filtro (afiliação / tipo / elemento) e os
-   cards de personagem. Depende de PERSONAGENS e ELEMENTOS
-   (arquivos de dados) e de openModal (modal.js).
+   Filtro compacto: um botão "Elemento" que abre um painel com
+   os ícones dos elementos, onde dá pra selecionar mais de um
+   ao mesmo tempo (multi-seleção). Sem filtro de afiliação/tipo.
+
+   Card de personagem é só o retrato (3:4, campo "retrato" em
+   personagens.js) com o nome e o ícone do elemento embaixo —
+   sem título, resumo ou tags (estilo "roster" de personagens,
+   tipo Genshin Impact). O resumo e o restante das infos
+   aparecem no modal, ao clicar no card.
+
+   Depende de PERSONAGENS e ELEMENTOS (arquivos de dados) e de
+   openModal (modal.js). TIPO_LABEL/AFILIACAO_LABEL continuam
+   aqui pro modal de perfil, mesmo não aparecendo nos cards.
    ============================================================ */
 
 const TIPO_LABEL = {
@@ -21,53 +31,53 @@ const AFILIACAO_LABEL = {
   independente: "Independente",
 };
 
-const activeFilters = { tipo: null, afiliacao: null, elemento: null };
+// elemento agora é multi-seleção: guarda um Set de valores ativos
+const activeFilters = { elemento: new Set() };
 
 function buildCharFilters() {
-  const tipos = [...new Set(PERSONAGENS.map((p) => p.tipo))];
-  const afiliacoes = [...new Set(PERSONAGENS.map((p) => p.afiliacao))];
   const elementos = [...new Set(PERSONAGENS.map((p) => p.elemento).filter((e) => e !== "nenhum"))];
+  const painel = document.getElementById("filter-elemento");
+  painel.innerHTML = "";
 
-  buildFilterGroup("filter-afiliacao", "Afiliação", afiliacoes, (v) => AFILIACAO_LABEL[v] || v, "afiliacao");
-  buildFilterGroup("filter-tipo", "Tipo", tipos, (v) => TIPO_LABEL[v] || v, "tipo");
-  buildFilterGroup(
-    "filter-elemento",
-    "Elemento",
-    elementos,
-    (v) => ELEMENTOS[v]?.nome || v,
-    "elemento",
-    (v) => ELEMENTOS[v]?.icone || null
-  );
-}
-
-function buildFilterGroup(containerId, label, values, labelFn, filterKey, iconFn) {
-  const container = document.getElementById(containerId);
-  const groupLabel = document.createElement("span");
-  groupLabel.className = "filter-group-label";
-  groupLabel.textContent = label;
-  container.appendChild(groupLabel);
-
-  values.forEach((value) => {
+  elementos.forEach((valor) => {
+    const info = ELEMENTOS[valor];
     const chip = document.createElement("button");
-    chip.className = "filter-chip";
-
-    const icone = iconFn ? iconFn(value) : null;
-    if (icone) {
-      chip.innerHTML = `<img src="${icone}" alt="" class="chip-icon">${labelFn(value)}`;
-    } else {
-      chip.textContent = labelFn(value);
-    }
+    chip.type = "button";
+    chip.className = "filter-chip filter-chip-icon-only";
+    chip.title = info?.nome || valor;
+    chip.innerHTML = `<img src="${info?.icone}" alt="${info?.nome || valor}" class="chip-icon">`;
 
     chip.addEventListener("click", () => {
-      const isActive = activeFilters[filterKey] === value;
-      activeFilters[filterKey] = isActive ? null : value;
-
-      container.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
-      if (!isActive) chip.classList.add("active");
-
+      if (activeFilters.elemento.has(valor)) {
+        activeFilters.elemento.delete(valor);
+        chip.classList.remove("active");
+      } else {
+        activeFilters.elemento.add(valor);
+        chip.classList.add("active");
+      }
       renderCharCards();
     });
-    container.appendChild(chip);
+
+    painel.appendChild(chip);
+  });
+
+  initFilterDropdown();
+}
+
+// Abre/fecha o painel de elementos ao clicar no botão "Elemento".
+function initFilterDropdown() {
+  const dropdown = document.getElementById("filter-elemento-dropdown");
+  const toggle = document.getElementById("filter-elemento-toggle");
+  if (!dropdown || !toggle || toggle.dataset.bound) return;
+
+  toggle.dataset.bound = "true";
+  toggle.addEventListener("click", () => {
+    dropdown.classList.toggle("open");
+  });
+
+  // fecha o painel se clicar fora dele
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target)) dropdown.classList.remove("open");
   });
 }
 
@@ -77,10 +87,8 @@ function renderCharCards() {
   grid.innerHTML = "";
 
   const filtered = PERSONAGENS.filter((p) => {
-    if (activeFilters.tipo && p.tipo !== activeFilters.tipo) return false;
-    if (activeFilters.afiliacao && p.afiliacao !== activeFilters.afiliacao) return false;
-    if (activeFilters.elemento && p.elemento !== activeFilters.elemento) return false;
-    return true;
+    if (activeFilters.elemento.size === 0) return true;
+    return activeFilters.elemento.has(p.elemento);
   });
 
   empty.style.display = filtered.length ? "none" : "block";
@@ -88,29 +96,25 @@ function renderCharCards() {
   filtered.forEach((p) => {
     const cor = ELEMENTOS[p.elemento]?.cor || "#6b6880";
     const iconeEl = ELEMENTOS[p.elemento]?.icone;
-    const tagElemento = p.elemento !== "nenhum"
-      ? (iconeEl
-          ? `<span class="tag tag-el"><img src="${iconeEl}" alt="" class="tag-icon">${ELEMENTOS[p.elemento].nome}</span>`
-          : `<span class="tag tag-el">${ELEMENTOS[p.elemento].nome}</span>`)
+
+    // sem retrato ainda: usa um fundo na cor do elemento no lugar da foto
+    const fundoRetrato = p.retrato
+      ? `background-image: url('${p.retrato}');`
+      : `background: linear-gradient(160deg, color-mix(in srgb, ${cor} 45%, transparent), var(--bg-panel-raised) 75%);`;
+
+    const iconeHTML = iconeEl
+      ? `<img src="${iconeEl}" alt="${ELEMENTOS[p.elemento].nome}" class="char-name-icon">`
       : "";
-    const portraitContent = iconeEl
-      ? `<img src="${iconeEl}" alt="" class="portrait-icon">`
-      : `<span class="portrait-glyph" style="border-color:${cor}"></span>`;
 
     const card = document.createElement("button");
     card.className = "char-card";
     card.style.setProperty("--el", cor);
     card.innerHTML = `
-      <div class="card-portrait">${portraitContent}</div>
-      <div class="card-body">
-        <h3>${p.nome}</h3>
-        <p class="char-title">${p.titulo}</p>
-        <div class="tag-row">
-          <span class="tag">${AFILIACAO_LABEL[p.afiliacao] || p.afiliacao}</span>
-          <span class="tag">${TIPO_LABEL[p.tipo] || p.tipo}</span>
-          ${tagElemento}
+      <div class="char-portrait" style="${fundoRetrato}">
+        <div class="char-name-bar">
+          ${iconeHTML}
+          <span class="char-name">${p.nome}</span>
         </div>
-        <p class="char-resumo">${p.resumo}</p>
       </div>
     `;
     card.addEventListener("click", () => openModal(buildCharModalContent(p)));
@@ -119,12 +123,18 @@ function renderCharCards() {
 }
 
 function buildCharModalContent(p) {
-  const tags = [AFILIACAO_LABEL[p.afiliacao] || p.afiliacao, TIPO_LABEL[p.tipo] || p.tipo];
+  // afiliação fica de fora do eyebrow também — só aparece na descrição
+  const tags = [TIPO_LABEL[p.tipo] || p.tipo];
   if (p.elemento !== "nenhum") tags.push(ELEMENTOS[p.elemento].nome);
+
+  // o resumo saiu do card, então aparece aqui no modal; o perfil completo
+  // (quando existir) entra embaixo dele
+  const body = p.perfil ? `${p.resumo}\n\n${p.perfil}` : p.resumo;
+
   return {
     eyebrow: tags.join(" · "),
     title: p.nome,
     subtitle: p.titulo,
-    body: p.perfil,
+    body,
   };
 }

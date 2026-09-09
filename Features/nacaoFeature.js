@@ -6,15 +6,19 @@
    na sidebar (dentro do grupo "Novo Mundo" ou "Velho Mundo").
 
    O corpo do perfil (imagem de capa + blocos de texto/imagem)
-   vem do campo "dossie" de cada nação — ver o formato completo
-   no comentário no topo de nacoes.js.
+   vem de window.DOSSIES[id-da-nação] — um "cofre" global que
+   cada nação preenche no próprio arquivo, dentro da própria
+   subpasta (ex: nivea/nivea.js). NÃO fica em nacoes.js — aquele
+   arquivo só tem o resumo curto de cada nação.
 
    Depende de NACOES e ELEMENTOS (arquivos de dados). Não usa
    openModal — as nações não abrem mais em modal.
 
-   Pra adicionar uma nação nova: basta colocar o objeto em
-   NACOES (nacoes.js). O item na sidebar e a página de perfil
-   são gerados automaticamente a partir daí.
+   Pra adicionar uma nação nova: coloca o objeto em NACOES
+   (nacoes.js), cria a subpasta dela com um arquivo
+   <id-da-nação>.js registrando o dossiê em window.DOSSIES, e
+   inclui esse arquivo no index.html. O item na sidebar e a
+   página de perfil são gerados automaticamente a partir daí.
    ============================================================ */
 
 function renderNationNav() {
@@ -53,8 +57,8 @@ function buildNationDetailHTML(nacao) {
   const mundoLabel = nacao.mundo === "novo" ? "Nação Elemental — Novo Mundo" : "Nação do Velho Mundo";
 
   const tagElemento = iconeEl
-    ? `<span class="tag tag-el" style="border-color:${corEl}; color:${corEl}">
-         <img src="${iconeEl}" alt="" class="tag-icon">${nomeEl}
+    ? `<span class="tag tag-el tag-icon-only" style="border-color:${corEl}" title="${nomeEl}">
+         <img src="${iconeEl}" alt="${nomeEl}" class="tag-icon">
        </span>`
     : `<span class="tag tag-el" style="border-color:${corEl}; color:${corEl}">${nomeEl}</span>`;
 
@@ -74,10 +78,11 @@ function buildNationDetailHTML(nacao) {
   `;
 }
 
-// Monta o dossiê completo (capa + blocos de texto/imagem). Se a
-// nação ainda não tiver "dossie" preenchido, mostra um aviso.
+// Monta o dossiê completo (capa + blocos de texto/imagem), lendo
+// de window.DOSSIES[id-da-nação]. Se a nação ainda não tiver
+// dossiê registrado, mostra um aviso.
 function buildDossieHTML(nacao) {
-  const dossie = nacao.dossie;
+  const dossie = window.DOSSIES?.[nacao.id];
 
   if (!dossie) {
     return `<p class="profile-pending">Dossiê completo ainda não escrito — por enquanto, só o resumo acima.</p>`;
