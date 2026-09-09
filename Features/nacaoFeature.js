@@ -47,6 +47,8 @@ function renderNationDetails() {
 }
 
 function buildNationDetailHTML(nacao) {
+  const corEl = ELEMENTOS[nacao.elemento]?.cor || "#6b6880";
+  const nomeEl = ELEMENTOS[nacao.elemento]?.nome || "—";
   const iconeEl = ELEMENTOS[nacao.elemento]?.icone;
   const mundoLabel = nacao.mundo === "novo" ? "Nação Elemental — Novo Mundo" : "Nação do Velho Mundo";
 
